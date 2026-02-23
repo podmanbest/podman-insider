@@ -1,5 +1,3 @@
-# podman-insider
-
 ## Pohon Direktori Proyek
 
 ```
@@ -35,24 +33,32 @@ podman-insider/
 └── README.md
 ```
 
-Podman In Podman
+## Penjelasan Komponen Kunci
 
-```sh
-podman build -t localhost/podman-insider:latest -f Containerfile .
+### 1. Containerfile (Bukan Dockerfile)
 
+Meskipun sama isinya, menggunakan nama Containerfile adalah standar native Podman. Ini menegaskan komitmen kita pada toolchain yang lebih aman.
 
-# Rootful Podman in rootful Podman with --privileged
-podman run --privileged quay.io/podman/stable podman run ubi8 echo hello
+Best Practice isi Containerfile:
 
-# Rootless Podman in rootful Podman with --privileged
-podman run --user podman --privileged quay.io/podman/stable podman run ubi8 echo hello
+- Gunakan specific user ID (UID) agar permission host dan container sinkron.
+- Copy config dari folder config/.
+- Set WORKDIR ke direktori yang aman.
 
-# Running without the --privileged flag
-podman run --cap-add=sys_admin,mknod --device=/dev/fuse --security-opt label=disable quay.io/podman/stable podman run ubi8-minimal echo hello
+### 2. deploy/k8s/base/ (Sumber Kebenaran YAML)
 
-# Rootless Podman in rootful Podman without --privileged
-podman run --user podman --security-opt label=disable --security-opt unmask=ALL --device /dev/fuse -ti quay.io/podman/stable podman run -ti docker.io/busybox echo hello
+Di sinilah kita menyimpan manifest dasar.
 
-# Podman-remote in rootful Podman with a leaked Podman socket from the host
-podman run -v /run:/run --security-opt label=disable quay.io/podman/stable podman --remote run busybox echo hi
-```
+- Workflow: Anda menjalankan aplikasi secara lokal menggunakan deploy/scripts/local-run.sh. Jika sudah sukses, jalankan make gen-k8s untuk memperbarui file di folder ini secara otomatis.
+- Kenapa dikeluarkan? Agar Anda bisa melakukan version control (Git) terhadap perubahan struktur K8s.
+
+### 3. deploy/k8s/overlays/ (Penskalaan Lingkungan)
+
+Kita menggunakan Kustomize (bawaan kubectl) untuk menangani perbedaan environment tanpa mengubah file dasar.
+
+- Dev: Mungkin pakai image localhost/my-app:dev dan replica 1.
+- Staging/Prod: Pakai image dari Registry (GHCR/DockerHub) dan replica 3.
+
+### 4. Makefile (The Glue)
+
+Ini adalah "Hero Tool" untuk developer. Dengan Makefile, kita menyembunyikan kompleksitas perintah Podman panjang menjadi perintah pendek.

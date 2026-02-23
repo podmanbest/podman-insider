@@ -1,33 +1,28 @@
-# stable/Containerfile
-#
-# Build a Podman container image from the latest
-# stable version of Podman on the Fedoras Updates System.
-# https://bodhi.fedoraproject.org/updates/?search=podman
-# This image can be used to create a secured container
-# that runs safely with privileges within the container.
-#
-FROM registry.fedoraproject.org/fedora:latest
+# Stage 1: Builder
+FROM python:3.11-slim AS builder
+WORKDIR /build
+COPY app/requirements.txt .
+RUN pip install --user --no-cache-dir -r requirements.txt
 
-# Don't include container-selinux and remove
-# directories used by yum that are just taking
-# up space.
-RUN dnf -y update; yum -y reinstall shadow-utils; \
-  yum -y install podman fuse-overlayfs --exclude container-selinux; \
-  rm -rf /var/cache /var/log/dnf* /var/log/yum.*
+# Stage 2: Runtime (Rootless)
+FROM python:3.11-slim
 
-RUN useradd podman; \
-  echo podman:10000:5000 > /etc/subuid; \
-  echo podman:10000:5000 > /etc/subgid;
+# 1. Buat user non-root dengan UID spesifik (misal 1001)
+# Ini mencegah masalah permission di volume mount
+RUN groupadd -r appuser -g 1001 && \
+    useradd -r -g appuser -u 1001 -m -s /sbin/nologin appuser
 
-COPY configs.sh ./tmp/
-RUN chmod +x /tmp/configs.sh; bash /tmp/configs.sh
-VOLUME /var/lib/containers
-VOLUME /home/podman/.local/share/containers
+# 2. Salin library dari builder
+COPY --from=builder /root/.local /root/.local
+# 3. Salin kode aplikasi
+COPY --chown=appuser:appuser app/ /app/
+COPY --chown=appuser:appuser config/ /app/config/
 
-RUN chown podman:podman -R /home/podman
+# 4. Setup Env
+ENV PATH=/root/.local/bin:$PATH
+USER appuser
+WORKDIR /app
 
-# chmod containers.conf and adjust storage.conf to enable Fuse storage.
-RUN chmod 644 /etc/containers/containers.conf; sed -i -e 's|^#mount_program|mount_program|g' -e '/additionalimage.*/a "/var/lib/shared",' -e 's|^mountopt[[:space:]]*=.*$|mountopt = "nodev,fsync=0"|g' /etc/containers/storage.conf
-RUN mkdir -p /var/lib/shared/overlay-images /var/lib/shared/overlay-layers /var/lib/shared/vfs-images /var/lib/shared/vfs-layers; touch /var/lib/shared/overlay-images/images.lock; touch /var/lib/shared/overlay-layers/layers.lock; touch /var/lib/shared/vfs-images/images.lock; touch /var/lib/shared/vfs-layers/layers.lock
-
-ENV _CONTAINERS_USERNS_CONFIGURED=""
+# Gunakan port tinggi
+EXPOSE 8080
+CMD ["python", "main.py"]
