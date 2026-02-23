@@ -1,0 +1,24 @@
+# Contoh praktek: Serve panduan Markdown di container (rootless)
+# Build: podman build -t localhost/podman-rootless-k8s-docs:dev -f Containerfile.docs .
+# Run:  podman run -d -p 8080:8080 localhost/podman-rootless-k8s-docs:dev
+
+FROM python:3.11-slim
+
+# User non-root (UID 1001) — selaras dengan Containerfile aplikasi & K8s securityContext
+RUN groupadd -r appuser -g 1001 && \
+    useradd -r -g appuser -u 1001 -m -s /sbin/nologin appuser
+
+WORKDIR /app
+
+# Salin konten panduan (docs + README, ToDo)
+COPY --chown=appuser:appuser docs/ /app/docs/
+COPY --chown=appuser:appuser README.md ToDo.md /app/
+COPY --chown=appuser:appuser index-docs.html /app/index.html
+
+USER appuser
+
+# Port tinggi (rootless-friendly)
+EXPOSE 8080
+
+# Serve static files (Markdown + HTML) via Python built-in server
+CMD ["python", "-m", "http.server", "8080", "--directory", "/app"]

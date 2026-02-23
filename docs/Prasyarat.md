@@ -98,3 +98,9 @@ Agar hasil `podman generate kube` langsung berguna di Kubernetes:
 | **Pod, bukan hanya container** | Jalankan workload dalam **pod** (`podman pod create` + `podman run --pod ...`) agar generate kube menghasilkan struktur mirip K8s. |
 
 Setelah langkah di atas, lanjut ke [Struktur direktori proyek](Direktori.md) dan [Workflow](Workflow.md) Level 2 (build) dan Level 3 (pod + run).
+
+---
+
+## 5. Opsional: Konfigurasi engine di host (configs.sh)
+
+Di root proyek ada file **configs.sh** yang menulis konfigurasi ke `/etc/containers/` (containers.conf dan registries.conf), misalnya `pids_limit=0` dan registry `localhost` sebagai insecure. Berguna untuk setup host sekali jalan. **Jalankan dengan akses root** (mis. `sudo bash configs.sh`). Bukan bagian dari alur build/run; bisa diabaikan jika engine sudah sesuai.

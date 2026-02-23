@@ -7,34 +7,19 @@ Panduan lengkap dan urutan baca: [README](README.md). Untuk alur workflow (Setup
 ## 🚀 Phase 1: Inisiasi & Struktur Proyek
 
 ```
-podman-insider/
-├── .github/
-│   └── workflows/
-│       └── ci-cd.yml          # Pipeline GitHub Actions / GitLab CI
+podman-rootless-k8s/
 ├── app/                       # Source Code Aplikasi
 │   ├── main.py
 │   ├── requirements.txt
 │   └── ...
-├── config/                    # Konfigurasi Non-Kode
-│   ├── app.conf
-│   └── logging.conf
-├── deploy/                    # ARTIFAK DEPLOYMENT (Penting untuk K8s)
-│   ├── k8s/
-│   │   ├── base/              # YAML Dasar (Hasil generate Podman / Template)
-│   │   │   ├── deployment.yaml
-│   │   │   ├── service.yaml
-│   │   │   └── kustomization.yaml
-│   │   └── overlays/          # Konfigurasi per Environment (Kustomize)
-│   │       ├── dev/
-│   │       │   └── kustomization.yaml
-│   │       └── staging/
-│   │           └── kustomization.yaml
-│   └── scripts/               # Script Otomasi Lokal (Podman Helper)
-│       ├── build.sh
-│       ├── local-run.sh       # Script untuk simulasi Pod & Container
-│       └── gen-manifest.sh    # Script wrapper untuk 'podman generate kube'
-├── Containerfile              # EKUIVALEN DOCKERFILE (Best Practice Rootless)
-├── Makefile                   # Jembatan Perintah (Shortcut)
+├── config/                    # Konfigurasi Non-Kode (app.conf, logging.conf)
+├── docs/                      # Panduan Markdown (serve via make run-docs)
+├── deploy/k8s/
+│   ├── base/                  # YAML dasar (kustomization.yaml; deployment di-generate)
+│   └── overlays/dev/          # Opsional: overlay Kustomize untuk env dev
+├── Containerfile
+├── Containerfile.docs
+├── Makefile
 ├── .gitignore
 └── README.md
 ```
@@ -46,7 +31,7 @@ Fokus: Menyiapkan pondasi yang bersih.
   - Cek /etc/subuid dan /etc/subgid (mapping user sudah ada).
 - Buat Struktur Folder
   - Buat folder root proyek (misal: my-app).
-  - Buat subfolder: app/, config/, deploy/k8s/base/, deploy/k8s/overlays/, deploy/scripts/.
+  - Buat subfolder: app/, config/, deploy/k8s/base/. Overlay (deploy/k8s/overlays/dev/) bisa ditambah nanti jika perlu.
 - Inisialisasi Git
   - Jalankan git init.
   - Buat .gitignore (abaikan **pycache**, .env, folder build lokal).
@@ -106,19 +91,19 @@ Fokus: Mengubah state lokal menjadi kode K8s (YAML).
 - Setup Kustomize
   1. Buat deploy/k8s/base/kustomization.yaml.
   2. List resource yang ada di folder tersebut.
-- Buat Environment Overlay
-  1. Buat deploy/k8s/overlays/dev/kustomization.yaml.
-  2. Tambah patch untuk image tag localhost/app:dev.
+- Buat Environment Overlay (opsional)
+  1. Jika ada overlay dev: buat deploy/k8s/overlays/dev/kustomization.yaml yang mereferensi base.
+  2. Tambah patch untuk image tag (mis. localhost/app:dev) jika perlu.
 
 ## 🚢 Phase 6: Deployment & CI/CD Integration
 
 Fokus: Mendaratkan kode ke Kluster.
 
 - Registry Setup
-  1. (Opsional untuk local cluster) Jika using real cluster, push image ke registry.
-  2. Update overlays/staging atau prod untuk menunjuk ke image registry.
+  1. (Opsional untuk local cluster) Jika pakai cluster nyata, push image ke registry.
+  2. Jika ada overlay staging/prod, update agar menunjuk ke image registry.
 - Deploy ke Kubernetes
-  1. Jalankan: kubectl apply -k deploy/k8s/overlays/dev.
+  1. Jalankan: kubectl apply -k deploy/k8s/base (atau kubectl apply -k deploy/k8s/overlays/dev jika overlay dev sudah ada).
   2. Cek Pod: kubectl get pods.
   3. Cek Logs: kubectl logs -f <pod_name>.
 - Final Verification

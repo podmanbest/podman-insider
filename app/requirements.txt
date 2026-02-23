@@ -1,0 +1,2 @@
+# Minimal deps untuk contoh app (opsional)
+# Flask atau dependency lain bisa ditambahkan di sini

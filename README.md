@@ -41,16 +41,42 @@ flowchart LR
 Struktur standar yang mendukung portabilitas ke K8s:
 
 ```
-podman-insider/
+podman-rootless-k8s/
 ├── app/                 # Source code aplikasi
 ├── config/              # Konfigurasi non-kode
-├── deploy/
-│   ├── k8s/base/        # YAML dasar (hasil podman generate kube)
-│   ├── k8s/overlays/    # Kustomize per environment (dev, staging)
-│   └── scripts/         # Script Podman (build, local-run, gen-manifest)
-├── Containerfile        # Build rootless-ready (user non-root, port > 1024)
-├── Makefile             # build, run, stop, gen-k8s
+├── docs/                # Panduan Markdown (Prasyarat, Workflow, Portabilitas, dll.)
+├── deploy/k8s/
+│   ├── base/            # YAML dasar (kustomization.yaml; deployment di-generate)
+│   └── overlays/dev/    # Opsional: overlay Kustomize
+├── Containerfile        # Build aplikasi rootless-ready
+├── Containerfile.docs   # Contoh praktek: serve panduan di container
+├── Makefile             # build, run, stop, gen-k8s + build-docs, run-docs, gen-k8s-docs
+├── configs.sh           # Opsional: konfigurasi engine host (lihat docs/Prasyarat.md)
 └── README.md
 ```
 
 Penjelasan lengkap tiap komponen: [Struktur direktori proyek](docs/Direktori.md).
+
+---
+
+## Contoh praktek: Jalankan panduan (docs) di container
+
+Panduan ini bisa dijalankan sebagai container rootless untuk memvalidasi alur Podman → Kubernetes tanpa perlu aplikasi custom:
+
+```bash
+make build-docs    # Build image yang berisi docs/ + README/ToDo
+make run-docs      # Jalankan pod + container; akses di http://localhost:8080
+make gen-k8s-docs # Generate manifest K8s dari pod docs (untuk deploy ke cluster)
+make stop-docs     # Hentikan pod dan container
+```
+
+Setelah `make run-docs`, buka http://localhost:8080 untuk indeks dan http://localhost:8080/docs/ untuk daftar panduan Markdown.
+
+**Tanpa Make (Windows / PowerShell):** Jika `make` tidak terpasang, gunakan Podman langsung:
+
+```powershell
+podman build -t localhost/podman-rootless-k8s-docs:dev -f Containerfile.docs .
+podman pod create --name docs-pod -p 8080:8080
+podman run -d --pod docs-pod --name podman-rootless-k8s-docs-ctr localhost/podman-rootless-k8s-docs:dev
+# Buka http://localhost:8080
+```
