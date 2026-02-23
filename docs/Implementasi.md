@@ -95,14 +95,12 @@ File ini menginstruksikan Kustomize untuk membaca file yang kita generate.
 ```yaml
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
-
 # Resources mengarah ke file hasil generate Podman
 
 resources:
   - deployment.yaml
 
 # Common labels untuk semua resource
-
 commonLabels:
 app: my-awesome-app
 env: base
