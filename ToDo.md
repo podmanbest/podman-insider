@@ -1,5 +1,9 @@
 # Checklist / Todo List praktis untuk menerapkan strategi "Podman Rootless to Kubernetes" secara terstruktur
 
+Panduan lengkap dan urutan baca: [README](README.md). Untuk alur workflow (Setup → Build → Pod → Generate → Deploy), lihat [Workflow](docs/Workflow.md).
+
+---
+
 ## 🚀 Phase 1: Inisiasi & Struktur Proyek
 
 ```

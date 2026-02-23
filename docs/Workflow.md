@@ -4,21 +4,8 @@
 
 Pastikan Podman terinstal dan dikonfigurasi untuk rootless. Ini dasar utamanya.
 
-1. Cek Konfigurasi User Namespace:
-
-   Pastikan file /etc/subuid dan /etc/subgid sudah dikonfigurasi agar user Anda bisa memetakan ID user container ke ID user host.
-
-   ```bash
-    # Biasanya otomatis saat instalasi, cek saja:
-    cat /etc/subuid
-    # Output contoh: devuser:100000:65536
-   ```
-
-2. Verifikasi Rootless:
-   Jalankan perintah ini. Jika tidak butuh sudo, Anda siap.
-   ```bash
-   podman ps
-   ```
+- **Instalasi per platform** (Windows/WSL2, Linux, macOS), **verifikasi rootless** (`podman ps` tanpa sudo, `podman info | grep rootless`), dan **cek user namespace** (`/etc/subuid`, `/etc/subgid`) dijelaskan lengkap di: [Prasyarat & instalasi Podman rootless](Prasyarat.md).
+- Setelah selesai, lanjut ke Level 2 (build image K8s-ready).
 
 ### Level 2: The "K8s-Ready" Build (Membangun Image)
 
@@ -142,9 +129,16 @@ kubectl apply -f my-k8s-deployment.yaml
 
 ### Ringkasan DevOps Workflow yang "Reusable"
 
-- Develop: Tulis kode dan Dockerfile (dengan user non-root).
+- Develop: Tulis kode dan Containerfile (dengan user non-root).
 - Test Local: podman pod create & podman run (Rootless).
 - Verify: Pastikan aplikasi berjalan di port > 1024 tanpa error permission.
 - Generate: podman generate kube -> Hasilkan YAML.
 - Commit: Masukkan YAML ke Git Repo.
 - Deploy: Pipeline CI/CD Anda tinggal menerapkan YAML tersebut ke K8s.
+
+---
+
+### Lihat juga
+
+- [Portabilitas: Podman vs Kubernetes](Portabilitas.md) — Apa yang terbawa 1:1 dan apa yang perlu disesuaikan.
+- [Troubleshooting](Troubleshooting.md) — Masalah umum rootless, generate kube, dan K8s.
